@@ -1,5 +1,7 @@
 pub mod server {
-    use std::net::{TcpListener};
+    use std::io::{Read, Write};
+    use std::net::{Shutdown, TcpListener, TcpStream};
+    use std::thread;
 
     pub struct TcpConnexion {
         listener: TcpListener
@@ -17,10 +19,31 @@ pub mod server {
             }
         }
 
-        pub fn run(&self) {
+        fn handle_client(mut stream: TcpStream) {
+            let mut data = [0u8; 50];
+            while match stream.read(&mut data) {
+                Ok(size) => {
+                    println!("{data:?}");
+                    stream.write(&data[0..size]).unwrap();
+                    true
+                },
+                Err(_) => {
+                    println!("An error occurred, terminating connection with {}", stream.peer_addr().unwrap());
+                    stream.shutdown(Shutdown::Both).unwrap();
+                    false
+                }
+            } {}
+        }
+
+        pub fn run(self) {
             for incoming in self.listener.incoming() {
                 match incoming {
-                    Ok(stream) => println!("New connection: {}", stream.peer_addr().unwrap()),
+                    Ok(stream) => {
+                        println!("New connection: {}", stream.peer_addr().unwrap());
+                        thread::spawn(move || {
+                            Self::handle_client(stream)
+                        });
+                    },
                     Err(e) => println!("Couldn't accept connexion: {}", e)
                 }
             }

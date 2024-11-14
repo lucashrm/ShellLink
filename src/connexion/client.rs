@@ -1,4 +1,5 @@
 pub mod client {
+    use std::io::Write;
     use std::net::{TcpStream};
 
     pub struct TcpConnexion {
@@ -15,6 +16,10 @@ pub mod client {
                 }),
                 Err(_) => Err("Couldn't connect to ip address")
             }
+        }
+
+        pub fn send_message(&mut self, message: &str) {
+            self.stream.write(message.as_bytes()).unwrap();
         }
     }
 }
