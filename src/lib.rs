@@ -1,3 +1,5 @@
+pub mod connexion;
+
 pub mod config {
     use crate::config::ConnexionMode::{Client, Server};
 
