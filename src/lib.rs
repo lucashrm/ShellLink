@@ -1,4 +1,7 @@
+use std::thread::JoinHandle;
+
 pub mod connexion;
+pub mod gui;
 
 pub mod config {
     use crate::config::ConnexionMode::{Client, Server};
@@ -33,4 +36,9 @@ pub mod config {
             &self.mode
         }
     }
+}
+
+pub struct Thread {
+    send_handles: Vec<JoinHandle<()>>,
+    receive_handles: Vec<JoinHandle<()>>
 }
