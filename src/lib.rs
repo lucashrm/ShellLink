@@ -1,5 +1,3 @@
-use std::thread::JoinHandle;
-
 pub mod connexion;
 pub mod gui;
 
@@ -36,9 +34,4 @@ pub mod config {
             &self.mode
         }
     }
-}
-
-pub struct Thread {
-    send_handles: Vec<JoinHandle<()>>,
-    receive_handles: Vec<JoinHandle<()>>
 }
