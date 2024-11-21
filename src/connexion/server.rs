@@ -43,7 +43,8 @@ pub mod server {
             loop {
                 match client_info.stream.read(&mut data) {
                     Ok(size) => {
-                        println!("{}", str::from_utf8(&data.split_at(size).0).unwrap());
+                        println!("{}", str::from_utf8(&data).unwrap());
+                        client_info.stream.write("message received".as_bytes()).unwrap();
                     },
                     Err(e) => {
                         println!("An error occurred, terminating connection with {}", e);
@@ -58,7 +59,7 @@ pub mod server {
             let mut data = [0u8; 50];
             match stream.read(&mut data) {
                 Ok(size) => {
-                    stream.write(&data[0..size]).unwrap();
+                    stream.write(b"Connected to the server.").unwrap();
                     let peer_addr = stream.peer_addr().unwrap();
                     let client_infos = ClientInfo {
                         stream,
@@ -69,10 +70,6 @@ pub mod server {
                     let handle = thread::spawn(move || {
                         Self::exec(client_infos)
                     });
-                    /*let mut infos = self.thread_pool.client_infos.lock().unwrap();
-                    infos.push(client_infos);*/
-                    //
-                    // self.thread_pool.handles.push(handle)
                 },
                 Err(e) => {
                     println!("An error occurred, terminating connection with {}", e);

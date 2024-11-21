@@ -1,9 +1,8 @@
 use std::{env};
 use std::process::exit;
 use shell_link::config::{Config, ConnexionMode};
-
+use shell_link::connexion::client::client;
 use shell_link::connexion::server::server;
-use shell_link::gui::window::screen;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -15,10 +14,7 @@ fn main() {
 
     match setup.get_mode() {
         ConnexionMode::Client => {
-            screen::new_window().unwrap_or_else(|e| {
-                eprintln!("Window problem: {}", e);
-                exit(1);
-            });
+            client::start();
         },
         ConnexionMode::Server => {
             let mut server = server::TcpConnexion::new("0.0.0.0:5444".to_string())
