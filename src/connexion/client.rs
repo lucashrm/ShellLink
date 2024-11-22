@@ -4,8 +4,7 @@ pub mod client {
     use std::net::{TcpStream};
     use std::process::exit;
     use std::str;
-    use std::sync::{mpsc, Arc, Mutex};
-    use std::time::Duration;
+    use std::sync::{Arc, Mutex};
 
     pub struct TcpConnexion {
         stream: TcpStream,
@@ -26,26 +25,27 @@ pub mod client {
             self.stream.write(message.as_bytes()).unwrap();
         }
 
-        pub fn read_message(&mut self) -> String {
-            let mut name = [0u8; 50];
-            match self.stream.read(&mut name) {
-                Ok(s) => {
-                    println!("{}", s);
-                    str::from_utf8(&name).unwrap().to_string()
-                },
-                Err(_) => exit(1)
+        pub fn read_message(&mut self) -> Result<String, ()> {
+            let mut data = [0u8; 50];
+            if let Ok(s) = self.stream.read(&mut data) {
+                return Ok(str::from_utf8(&data.split_at(s).0).unwrap().to_string());
             }
+            Err(())
         }
 
-        pub fn set_read_non_blocking(&mut self) {
-            self.stream.set_read_timeout(Some(Duration::from_millis(10))).unwrap();
+        pub fn set_read_non_blocking(&self) {
+            self.stream.set_nonblocking(true).unwrap_or_else(|e| {
+                println!("{e}");
+                exit(84)
+            });
         }
     }
 
     fn wait_messages(client: Arc<Mutex<TcpConnexion>>) {
         loop {
-            let message = client.lock().unwrap().read_message();
-            println!("{}", message);
+            if let Ok(message) = client.lock().unwrap().read_message() {
+                println!("{}", message);
+            }
         }
     }
 
@@ -74,19 +74,20 @@ pub mod client {
         let mut client = TcpConnexion::new("localhost:5444".to_string()).unwrap();
 
         client.send_message(input.as_str());
-        let message = client.read_message();
+        let message = client.read_message().unwrap();
 
-        //client.set_read_non_blocking();
+        client.set_read_non_blocking();
 
         println!("{}", message);
 
         let mutex_client = Arc::new(Mutex::new(client));
-        let mutex_client2 = Arc::clone(&mutex_client);
+
+        let message_client = Arc::clone(&mutex_client);
         let handle = thread::spawn(move || {
-           take_input(Arc::clone(&mutex_client2));
+           take_input(mutex_client);
         });
 
-        //wait_messages(Arc::clone(&mutex_client));
+        wait_messages(message_client);
 
         handle.join().unwrap();
     }

@@ -2,7 +2,7 @@ pub mod server {
     use std::io::{Read, Write};
     use std::net::{Shutdown, SocketAddr, TcpListener, TcpStream};
     use std::thread;
-    use std::thread::{JoinHandle, Thread};
+    use std::thread::{JoinHandle};
     use std::str;
     use std::sync::{Arc, Mutex};
 
@@ -42,8 +42,8 @@ pub mod server {
             let mut data = [0u8; 50];
             loop {
                 match client_info.stream.read(&mut data) {
-                    Ok(size) => {
-                        println!("{}", str::from_utf8(&data).unwrap());
+                    Ok(s) => {
+                        print!("{}", str::from_utf8(&data.split_at(s).0).unwrap());
                         client_info.stream.write("message received".as_bytes()).unwrap();
                     },
                     Err(e) => {
@@ -67,7 +67,7 @@ pub mod server {
                         name: String::from(str::from_utf8(&data.split_at(size).0).unwrap())
                     };
                     println!("{}, {}", client_infos.peer_addr, client_infos.name);
-                    let handle = thread::spawn(move || {
+                    thread::spawn(move || {
                         Self::exec(client_infos)
                     });
                 },
