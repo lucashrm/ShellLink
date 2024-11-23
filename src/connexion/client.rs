@@ -4,10 +4,18 @@ pub mod client {
     use std::net::{TcpStream};
     use std::process::exit;
     use std::str;
-    use std::sync::{Arc, Mutex};
+    use std::sync::{mpsc, Arc, Mutex};
+    use std::sync::mpsc::Receiver;
+    use std::sync::mpsc::Sender;
 
     pub struct TcpConnexion {
         stream: TcpStream,
+        disconnected: bool
+    }
+
+    pub struct TcpSocket {
+        heap: [u8; 8],
+        data: [u8]
     }
 
     impl TcpConnexion {
@@ -16,6 +24,7 @@ pub mod client {
             match stream {
                 Ok(s) => Ok(TcpConnexion {
                     stream: s,
+                    disconnected: false
                 }),
                 Err(_) => Err("Couldn't connect to ip address")
             }
@@ -39,10 +48,17 @@ pub mod client {
                 exit(84)
             });
         }
+
+        pub fn shutdown(&mut self) {
+            self.disconnected = true;
+        }
     }
 
     fn wait_messages(client: Arc<Mutex<TcpConnexion>>) {
         loop {
+            if client.lock().unwrap().disconnected {
+                break
+            }
             if let Ok(message) = client.lock().unwrap().read_message() {
                 println!("{}", message);
             }
@@ -55,7 +71,26 @@ pub mod client {
 
             io::stdin().read_line(&mut input).expect("Failed to read instruct");
 
-            client.lock().unwrap().send_message(input.as_str());
+            let array: Vec<&str> = input.split_whitespace().collect();
+
+            if array[0].contains("quit") {
+                client.lock().unwrap().shutdown();
+                break
+            }
+            else if array.len() < 3 {
+                println!("Need 3 arguments to work");
+                continue
+            }
+
+            match array[0] {
+                "message" => {
+                    client.lock().unwrap().send_message(array[1]);
+                },
+                _ => {
+                    println!("Doesn't know the function");
+                    continue
+                }
+            }
         }
     }
 

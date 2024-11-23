@@ -43,7 +43,7 @@ pub mod server {
             loop {
                 match client_info.stream.read(&mut data) {
                     Ok(s) => {
-                        print!("{}", str::from_utf8(&data.split_at(s).0).unwrap());
+                        println!("{}", str::from_utf8(&data.split_at(s).0).unwrap());
                         client_info.stream.write("message received".as_bytes()).unwrap();
                     },
                     Err(e) => {
