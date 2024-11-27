@@ -77,17 +77,19 @@ pub mod client {
                 client.lock().unwrap().shutdown();
                 break
             }
-            else if array.len() < 3 {
-                println!("Need 3 arguments to work");
-                continue
-            }
 
             match array[0] {
-                "message" => {
-                    client.lock().unwrap().send_message(array[1]);
+                "message" | "m" => {
+                    if array.len() < 3 {
+                        continue
+                    }
+                    client.lock().unwrap().send_message(array[2]);
+                },
+                "help" | "h" => {
+                    println!("Available commands:\n- message | m [receiver] [message]: Send a message to the given receiver.\n\nShellLink 0.1 ")
                 },
                 _ => {
-                    println!("Doesn't know the function");
+                    println!("Doesn't know this command. Try \"help\" or \"h\" to get help.");
                     continue
                 }
             }
