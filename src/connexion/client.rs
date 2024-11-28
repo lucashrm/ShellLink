@@ -37,6 +37,13 @@ pub mod client {
             self.stream.write(&socket).unwrap();
         }
 
+        pub fn send_list(&mut self) {
+            let heap = [2];
+            let heap: [u8; 8] = pad_zeroes(heap);
+
+            self.stream.write(&heap).unwrap();
+        }
+
         pub fn read_message(&mut self) -> Result<String, ()> {
             let mut data = [0u8; 50];
             if let Ok(s) = self.stream.read(&mut data) {
@@ -89,8 +96,11 @@ pub mod client {
                     client.lock().unwrap().send_message(array[1].as_bytes(), array[2].as_bytes());
                 },
                 "help" | "h" => {
-                    println!("Available commands:\n- message | m [receiver] [message]: Send a message to the given receiver.\n\nShellLink 0.1")
+                    println!("Available commands:\n- message | m [receiver] [message]: Send a message to the given receiver.\n- list | l: Print all connected users.\n\nShellLink 0.1")
                 },
+                "list" | "l" => {
+                    client.lock().unwrap().send_list();
+                }
                 _ => {
                     println!("Doesn't know this command. Try \"help\" or \"h\" to get help.");
                     continue

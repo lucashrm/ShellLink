@@ -1,4 +1,5 @@
 pub mod server {
+    use std::fmt::format;
     use std::io::{Read, Write};
     use std::net::{Shutdown, SocketAddr, TcpListener, TcpStream};
     use std::thread;
@@ -46,7 +47,7 @@ pub mod server {
             }
         }
 
-        pub fn read_socket(data: &[u8], _client_info: &mut ClientInfo, clients: Arc<Mutex<Vec<ClientInfo>>>) {
+        pub fn read_socket(data: &[u8], client_info: &ClientInfo, clients: Arc<Mutex<Vec<ClientInfo>>>) {
             match data[0] {
                 1 => {
                     let size_receiver = data[2] as usize + 8;
@@ -58,7 +59,7 @@ pub mod server {
                     for client in clients.lock().unwrap().iter().enumerate() {
                         println!("{:?}", client);
                         if client.1.name == receiver {
-                            client.1.stream.try_clone().unwrap().write(message.as_bytes()).unwrap();
+                            client.1.stream.try_clone().unwrap().write(format!("[{}]: {message}", client_info.name).as_bytes()).unwrap();
                         }
                     }
 
