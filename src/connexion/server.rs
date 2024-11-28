@@ -47,7 +47,7 @@ pub mod server {
             }
         }
 
-        pub fn read_socket(data: &[u8], client_info: &ClientInfo, clients: Arc<Mutex<Vec<ClientInfo>>>) {
+        pub fn read_socket(data: &[u8], client_info: &mut ClientInfo, clients: Arc<Mutex<Vec<ClientInfo>>>) {
             match data[0] {
                 1 => {
                     let size_receiver = data[2] as usize + 8;
@@ -56,14 +56,21 @@ pub mod server {
                     let receiver = from_utf8(&data[8..size_receiver]).unwrap();
                     let message = from_utf8(&data[size_receiver..size_message]).unwrap();
 
-                    for client in clients.lock().unwrap().iter().enumerate() {
+                    for client in clients.lock().unwrap().iter() {
                         println!("{:?}", client);
-                        if client.1.name == receiver {
-                            client.1.stream.try_clone().unwrap().write(format!("[{}]: {message}", client_info.name).as_bytes()).unwrap();
+                        if client.name == receiver {
+                            client.stream.try_clone().unwrap().write(format!("[{}]: {message}", client_info.name).as_bytes()).unwrap();
                         }
                     }
 
                     println!("{} {}", receiver, message);
+                },
+                2 => {
+                    let mut list = String::new();
+                    for client in clients.lock().unwrap().iter() {
+                        list.push_str(format!("- {}\n", client.name.as_str()).as_str());
+                    }
+                    client_info.stream.write(list.as_bytes()).unwrap();
                 }
                 _ => {}
             }
@@ -75,11 +82,18 @@ pub mod server {
                 match client_info.stream.read(&mut data) {
                     Ok(_) => {
                         Self::read_socket(&data, &mut client_info, Arc::clone(&clients));
-                        client_info.stream.write("message received".as_bytes()).unwrap();
                     },
                     Err(e) => {
                         println!("An error occurred, terminating connection with {}", e);
                         client_info.stream.shutdown(Shutdown::Both).unwrap();
+                        let mut index: usize = 0;
+                        for client in clients.lock().unwrap().iter().enumerate() {
+                            if client.1.name == client_info.name {
+                                index = client.0;
+                                break;
+                            }
+                        }
+                        clients.lock().unwrap().remove(index);
                         break
                     }
                 }

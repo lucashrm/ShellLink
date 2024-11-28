@@ -99,6 +99,7 @@ pub mod client {
                     println!("Available commands:\n- message | m [receiver] [message]: Send a message to the given receiver.\n- list | l: Print all connected users.\n\nShellLink 0.1")
                 },
                 "list" | "l" => {
+                    println!("Users connected:");
                     client.lock().unwrap().send_list();
                 }
                 _ => {
