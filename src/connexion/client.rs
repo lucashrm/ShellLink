@@ -4,18 +4,12 @@ pub mod client {
     use std::net::{TcpStream};
     use std::process::exit;
     use std::str;
-    use std::sync::{mpsc, Arc, Mutex};
-    use std::sync::mpsc::Receiver;
-    use std::sync::mpsc::Sender;
+    use std::sync::{Arc, Mutex};
+    use crate::pad_zeroes;
 
     pub struct TcpConnexion {
         stream: TcpStream,
         disconnected: bool
-    }
-
-    pub struct TcpSocket {
-        heap: [u8; 8],
-        data: [u8]
     }
 
     impl TcpConnexion {
@@ -30,8 +24,17 @@ pub mod client {
             }
         }
 
-        pub fn send_message(&mut self, message: &str) {
-            self.stream.write(message.as_bytes()).unwrap();
+        pub fn send_message(&mut self, receiver: &[u8], message: &[u8]) {
+            let heap = [1, 2, receiver.len() as u8, message.len() as u8];
+            let heap: [u8; 8] = pad_zeroes(heap);
+
+            let mut socket= heap.to_vec();
+            socket.extend_from_slice(receiver);
+            socket.extend_from_slice(message);
+
+            println!("{:?}", socket);
+
+            self.stream.write(&socket).unwrap();
         }
 
         pub fn read_message(&mut self) -> Result<String, ()> {
@@ -83,10 +86,10 @@ pub mod client {
                     if array.len() < 3 {
                         continue
                     }
-                    client.lock().unwrap().send_message(array[2]);
+                    client.lock().unwrap().send_message(array[1].as_bytes(), array[2].as_bytes());
                 },
                 "help" | "h" => {
-                    println!("Available commands:\n- message | m [receiver] [message]: Send a message to the given receiver.\n\nShellLink 0.1 ")
+                    println!("Available commands:\n- message | m [receiver] [message]: Send a message to the given receiver.\n\nShellLink 0.1")
                 },
                 _ => {
                     println!("Doesn't know this command. Try \"help\" or \"h\" to get help.");
@@ -110,7 +113,7 @@ pub mod client {
 
         let mut client = TcpConnexion::new("localhost:5444".to_string()).unwrap();
 
-        client.send_message(input.as_str());
+        client.stream.write(input.as_bytes()).unwrap();
         let message = client.read_message().unwrap();
 
         client.set_read_non_blocking();

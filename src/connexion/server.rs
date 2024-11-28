@@ -4,6 +4,7 @@ pub mod server {
     use std::thread;
     use std::thread::{JoinHandle};
     use std::str;
+    use std::str::from_utf8;
     use std::sync::{Arc, Mutex};
 
     pub struct ThreadPool {
@@ -38,12 +39,27 @@ pub mod server {
             }
         }
 
+        pub fn read_socket(data: &[u8], _client_info: &mut ClientInfo) {
+            match data[0] {
+                1 => {
+                    let size_receiver = data[2] as usize + 8;
+                    let size_message = data[3] as usize + size_receiver;
+
+                    let receiver = from_utf8(&data[8..size_receiver]).unwrap();
+                    let message = from_utf8(&data[size_receiver..size_message]).unwrap();
+
+                    println!("{} {}", receiver, message);
+                }
+                _ => {}
+            }
+        }
+
         fn exec(mut client_info: ClientInfo) {
             let mut data = [0u8; 50];
             loop {
                 match client_info.stream.read(&mut data) {
-                    Ok(s) => {
-                        println!("{}", str::from_utf8(&data.split_at(s).0).unwrap());
+                    Ok(_) => {
+                        Self::read_socket(&data, &mut client_info);
                         client_info.stream.write("message received".as_bytes()).unwrap();
                     },
                     Err(e) => {

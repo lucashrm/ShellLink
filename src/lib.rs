@@ -1,5 +1,11 @@
 pub mod connexion;
 
+fn pad_zeroes<const A: usize, const B: usize>(arr: [u8; A]) -> [u8; B] {
+    let mut b = [0; B];
+    b[..A].copy_from_slice(&arr);
+    b
+}
+
 pub mod config {
     use crate::config::ConnexionMode::{Client, Server};
 
