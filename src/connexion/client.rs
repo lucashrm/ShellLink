@@ -98,7 +98,10 @@ pub mod client {
                     client.lock().unwrap().send_message(array[1].as_bytes(), array[2].as_bytes());
                 },
                 "help" | "h" => {
-                    println!("Available commands:\n- message | m [receiver] [message]: Send a message to the given receiver.\n- list | l: Print all connected users.\n\nShellLink 0.1")
+                    println!("Available commands:\n- message | m [receiver] [message]: Send a message to the given receiver.\n\
+                            - list | l: Print all connected users.\n\
+                            - quit | exit: Disconnect and quit ShellLink.\n\n\
+                            ShellLink 0.1")
                 },
                 "list" | "l" => {
                     println!("Users connected:");

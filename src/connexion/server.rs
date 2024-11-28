@@ -1,9 +1,7 @@
 pub mod server {
-    use std::fmt::format;
     use std::io::{Read, Write};
     use std::net::{Shutdown, SocketAddr, TcpListener, TcpStream};
     use std::thread;
-    use std::thread::{JoinHandle};
     use std::str;
     use std::str::from_utf8;
     use std::sync::{Arc, Mutex};
@@ -31,7 +29,6 @@ pub mod server {
 
     pub struct TcpConnexion {
         listener: TcpListener,
-        handles: Vec<JoinHandle<()>>,
     }
 
     impl TcpConnexion {
@@ -41,7 +38,6 @@ pub mod server {
             match listener {
                 Ok(l) => Ok(TcpConnexion {
                     listener: l,
-                    handles: Vec::new(),
                 }),
                 Err(_) => Err("Couldn't bind at this addr")
             }
@@ -69,14 +65,18 @@ pub mod server {
                     let receiver = from_utf8(&data[8..size_receiver]).unwrap();
                     let message = from_utf8(&data[size_receiver..size_message]).unwrap();
 
+                    let mut sent= false;
                     for client in clients.lock().unwrap().iter() {
                         println!("{:?}", client);
                         if client.name == receiver {
                             client.stream.try_clone().unwrap().write(format!("[{}]: {message}", client_info.name).as_bytes()).unwrap();
+                            sent = true;
+                            break;
                         }
                     }
-
-                    println!("{} {}", receiver, message);
+                    if !sent {
+                        client_info.stream.write("Couldn't find this user, try \"list\" command.".as_bytes()).unwrap();
+                    }
                 },
                 2 => {
                     let mut list = String::new();
