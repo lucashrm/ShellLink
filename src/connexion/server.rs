@@ -47,7 +47,20 @@ pub mod server {
             }
         }
 
-        pub fn read_socket(data: &[u8], client_info: &mut ClientInfo, clients: Arc<Mutex<Vec<ClientInfo>>>) {
+        fn disconnect_client(client_info: &mut ClientInfo, clients: Arc<Mutex<Vec<ClientInfo>>>)
+        {
+            client_info.stream.shutdown(Shutdown::Both).unwrap();
+            let mut index: usize = 0;
+            for client in clients.lock().unwrap().iter().enumerate() {
+                if client.1.name == client_info.name {
+                    index = client.0;
+                    break;
+                }
+            }
+            clients.lock().unwrap().remove(index);
+        }
+
+        pub fn read_socket(data: &[u8], client_info: &mut ClientInfo, clients: Arc<Mutex<Vec<ClientInfo>>>) -> bool {
             match data[0] {
                 1 => {
                     let size_receiver = data[2] as usize + 8;
@@ -71,9 +84,15 @@ pub mod server {
                         list.push_str(format!("- {}\n", client.name.as_str()).as_str());
                     }
                     client_info.stream.write(list.as_bytes()).unwrap();
+                },
+                9 => {
+                    println!("{:?}", clients);
+                    Self::disconnect_client(client_info, clients);
+                    return false;
                 }
                 _ => {}
             }
+            true
         }
 
         fn exec(mut client_info: ClientInfo, clients: Arc<Mutex<Vec<ClientInfo>>>) {
@@ -81,19 +100,14 @@ pub mod server {
             loop {
                 match client_info.stream.read(&mut data) {
                     Ok(_) => {
-                        Self::read_socket(&data, &mut client_info, Arc::clone(&clients));
+                        let is_running = Self::read_socket(&data, &mut client_info, Arc::clone(&clients));
+                        if !is_running {
+                            break
+                        }
                     },
                     Err(e) => {
                         println!("An error occurred, terminating connection with {}", e);
-                        client_info.stream.shutdown(Shutdown::Both).unwrap();
-                        let mut index: usize = 0;
-                        for client in clients.lock().unwrap().iter().enumerate() {
-                            if client.1.name == client_info.name {
-                                index = client.0;
-                                break;
-                            }
-                        }
-                        clients.lock().unwrap().remove(index);
+                        Self::disconnect_client(&mut client_info, Arc::clone(&clients));
                         break
                     }
                 }

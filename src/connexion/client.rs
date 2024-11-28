@@ -37,6 +37,13 @@ pub mod client {
             self.stream.write(&socket).unwrap();
         }
 
+        fn disconnect(&mut self) {
+            let heap = [9];
+            let heap: [u8; 8] = pad_zeroes(heap);
+
+            self.stream.write(&heap).unwrap();
+        }
+
         pub fn send_list(&mut self) {
             let heap = [2];
             let heap: [u8; 8] = pad_zeroes(heap);
@@ -83,11 +90,6 @@ pub mod client {
 
             let array: Vec<&str> = input.split_whitespace().collect();
 
-            if array[0].contains("quit") {
-                client.lock().unwrap().shutdown();
-                break
-            }
-
             match array[0] {
                 "message" | "m" => {
                     if array.len() < 3 {
@@ -101,7 +103,12 @@ pub mod client {
                 "list" | "l" => {
                     println!("Users connected:");
                     client.lock().unwrap().send_list();
-                }
+                },
+                "quit" | "exit" => {
+                    client.lock().unwrap().disconnect();
+                    client.lock().unwrap().shutdown();
+                    break;
+                },
                 _ => {
                     println!("Doesn't know this command. Try \"help\" or \"h\" to get help.");
                     continue
