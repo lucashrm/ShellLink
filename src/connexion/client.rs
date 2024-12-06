@@ -51,6 +51,16 @@ pub mod client {
             self.stream.write(&heap).unwrap();
         }
 
+        pub fn send_call(&mut self, receiver: &[u8]) {
+            let heap = [3, 1, receiver.len() as u8];
+            let heap: [u8; 8] = pad_zeroes(heap);
+
+            let mut socket= heap.to_vec();
+            socket.extend_from_slice(receiver);
+
+            self.stream.write(&socket).unwrap();
+        }
+
         pub fn read_message(&mut self) -> Result<String, ()> {
             let mut data = [0u8; 50];
             if let Ok(s) = self.stream.read(&mut data) {
@@ -106,6 +116,12 @@ pub mod client {
                 "list" | "l" => {
                     println!("Users connected:");
                     client.lock().unwrap().send_list();
+                },
+                "call" | "c" => {
+                    if array.len() < 2 {
+                        continue
+                    }
+                    client.lock().unwrap().send_call(array[1].as_bytes());
                 },
                 "quit" | "exit" => {
                     client.lock().unwrap().disconnect();

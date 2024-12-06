@@ -85,6 +85,21 @@ pub mod server {
                     }
                     client_info.stream.write(list.as_bytes()).unwrap();
                 },
+                3 => {
+                    let size_receiver = data[2] as usize + 8;
+
+                    let receiver = from_utf8(&data[8..size_receiver]).unwrap();
+
+                    if receiver == client_info.name {
+                        client_info.stream.write("You can't call yourself, silly cat.".as_bytes()).unwrap();
+                        return true
+                    }
+
+                    match clients.lock().unwrap().iter().find(|x| {x.name == receiver}) {
+                        Some(client) => client.stream.try_clone().unwrap().write(format!("{} is calling you. Do you answer ? y | n", client_info.name).as_bytes()).unwrap(),
+                        None => client_info.stream.write("Couldn't find this user, try \"list\" command.".as_bytes()).unwrap()
+                    };
+                }
                 9 => {
                     println!("{:?}", clients);
                     Self::disconnect_client(client_info, clients);
