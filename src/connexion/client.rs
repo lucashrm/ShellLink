@@ -10,7 +10,7 @@ pub mod client {
     pub struct TcpConnexion {
         stream: TcpStream,
         disconnected: bool,
-        rhetorical: bool,
+        rhetorical: Option<String>,
     }
 
     impl TcpConnexion {
@@ -20,7 +20,7 @@ pub mod client {
                 Ok(s) => Ok(TcpConnexion {
                     stream: s,
                     disconnected: false,
-                    rhetorical: false,
+                    rhetorical: None,
                 }),
                 Err(_) => Err("Couldn't connect to ip address")
             }
@@ -53,7 +53,7 @@ pub mod client {
             self.stream.write(&heap).unwrap();
         }
 
-        pub fn send_call(&mut self, receiver: &[u8]) {
+        fn send_call(&mut self, receiver: &[u8]) {
             let heap = [3, 1, receiver.len() as u8];
             let heap: [u8; 8] = pad_zeroes(heap);
 
@@ -61,6 +61,14 @@ pub mod client {
             socket.extend_from_slice(receiver);
 
             self.stream.write(&socket).unwrap();
+        }
+
+        fn answer_call(&mut self) {
+            match &self.rhetorical {
+                Some(m) => println!("{}", m),
+                None => println!("Doesn't know this command. Try \"help\" or \"h\" to get help.")
+            }
+
         }
 
         pub fn read_message(&mut self) -> Result<String, ()> {
@@ -94,7 +102,9 @@ pub mod client {
                 is_rhetorical = message.clone();
             }
             if is_rhetorical.contains("y | n") {
-                client.lock().unwrap().rhetorical = true;
+                if let Some(size) = is_rhetorical.find(' ') {
+                    client.lock().unwrap().rhetorical = Some(String::from(is_rhetorical.split_at(size).0));
+                }
             }
         }
     }
@@ -137,12 +147,7 @@ pub mod client {
                     break;
                 },
                 "y" | "n" => {
-                    if client.lock().unwrap().rhetorical {
-                        println!("Answering...");
-                        client.lock().unwrap().rhetorical = false;
-                    } else {
-                        println!("Doesn't know this command. Try \"help\" or \"h\" to get help.");
-                    }
+                    client.lock().unwrap().answer_call();
                 }
                 _ => {
                     println!("Doesn't know this command. Try \"help\" or \"h\" to get help.");
