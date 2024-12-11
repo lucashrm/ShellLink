@@ -9,7 +9,8 @@ pub mod client {
 
     pub struct TcpConnexion {
         stream: TcpStream,
-        disconnected: bool
+        disconnected: bool,
+        rhetorical: bool,
     }
 
     impl TcpConnexion {
@@ -18,7 +19,8 @@ pub mod client {
             match stream {
                 Ok(s) => Ok(TcpConnexion {
                     stream: s,
-                    disconnected: false
+                    disconnected: false,
+                    rhetorical: false,
                 }),
                 Err(_) => Err("Couldn't connect to ip address")
             }
@@ -86,8 +88,13 @@ pub mod client {
             if client.lock().unwrap().disconnected {
                 break
             }
+            let mut is_rhetorical = String::new();
             if let Ok(message) = client.lock().unwrap().read_message() {
                 println!("{}", message);
+                is_rhetorical = message.clone();
+            }
+            if is_rhetorical.contains("y | n") {
+                client.lock().unwrap().rhetorical = true;
             }
         }
     }
@@ -109,6 +116,7 @@ pub mod client {
                 },
                 "help" | "h" => {
                     println!("Available commands:\n- message | m [receiver] [message]: Send a message to the given receiver.\n\
+                            - call | c [user]: Call a connected user.\n\
                             - list | l: Print all connected users.\n\
                             - quit | exit: Disconnect and quit ShellLink.\n\n\
                             ShellLink 0.1")
@@ -128,6 +136,14 @@ pub mod client {
                     client.lock().unwrap().shutdown();
                     break;
                 },
+                "y" | "n" => {
+                    if client.lock().unwrap().rhetorical {
+                        println!("Answering...");
+                        client.lock().unwrap().rhetorical = false;
+                    } else {
+                        println!("Doesn't know this command. Try \"help\" or \"h\" to get help.");
+                    }
+                }
                 _ => {
                     println!("Doesn't know this command. Try \"help\" or \"h\" to get help.");
                     continue

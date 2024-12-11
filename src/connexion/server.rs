@@ -133,7 +133,7 @@ pub mod server {
             let mut data = [0u8; 50];
             match stream.read(&mut data) {
                 Ok(size) => {
-                    stream.write(b"Connected to the server.").unwrap();
+                    stream.write(b"Welcome to ShellLink.").unwrap();
                     let peer_addr = stream.peer_addr().unwrap();
                     let mut name = String::from(from_utf8(&data.split_at(size).0).unwrap());
                     let len = name.len();
