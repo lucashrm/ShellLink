@@ -65,7 +65,15 @@ pub mod client {
 
         fn answer_call(&mut self) {
             match &self.rhetorical {
-                Some(m) => println!("{}", m),
+                Some(m) => {
+                    let heap = [4, 1, m.len() as u8];
+                    let heap: [u8; 8] = pad_zeroes(heap);
+
+                    let mut socket = heap.to_vec();
+                    socket.extend_from_slice(m.as_bytes());
+
+                    self.stream.write(&socket).unwrap();
+                },
                 None => println!("Doesn't know this command. Try \"help\" or \"h\" to get help.")
             }
 
